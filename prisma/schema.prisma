@@ -1,0 +1,42 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model AdminUser {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
+model Material {
+  id             Int            @id @default(autoincrement())
+  name           String         @unique
+  defaultDensity Float?
+  createdAt      DateTime       @default(now())
+  pricingEntries PricingEntry[]
+}
+
+model PricingEntry {
+  id          Int      @id @default(autoincrement())
+  materialId  Int
+  material    Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  thickness   Float
+  costPerArea Float    // $/mm²
+  costPerTime Float    // $/hour (machine time)
+  cutSpeed    Float    // mm/min
+  createdAt   DateTime @default(now())
+
+  @@unique([materialId, thickness])
+}
+
+model GlobalSettings {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+}
