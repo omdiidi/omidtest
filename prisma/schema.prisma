@@ -27,9 +27,18 @@ model PricingEntry {
   materialId  Int
   material    Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
   thickness   Float
-  costPerArea Float    // $/mm²
+  thicknessUnit String   @default("mm") // "mm", "in"
+  thicknessDisplay String? // Original input, e.g. "1/8"
+
+  costPerArea Float    // $/mm² (Standardized)
+  areaUnit    String   @default("mm2") // "mm2", "in2"
+  costPerAreaDisplay String? 
+
   costPerTime Float    // $/hour (machine time)
-  cutSpeed    Float    // mm/min
+
+  cutSpeed    Float    // mm/min (Standardized)
+  speedUnit   String   @default("mm_min") // "mm_min", "in_min"
+  speedDisplay String?
   createdAt   DateTime @default(now())
 
   @@unique([materialId, thickness])

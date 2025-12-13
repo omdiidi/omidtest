@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { parseDxf, readDxfFile, DxfRenderer } from '../lib/dxf';
+import { useState, useEffect, useCallback } from 'react';
+import { parseDxf, readDxfFile } from '../lib/dxf';
 import { calculatePrice, formatCurrency, formatNumber } from '../lib/pricing';
+import DXFViewer from '../components/DXFViewer';
 
 export default function Home() {
     const [config, setConfig] = useState({ materials: [], settings: {} });
@@ -13,8 +14,8 @@ export default function Home() {
     const [selectedThickness, setSelectedThickness] = useState('');
     const [priceBreakdown, setPriceBreakdown] = useState(null);
 
-    const canvasRef = useRef(null);
-    const rendererRef = useRef(null);
+    // Quantity State
+    const [quantity, setQuantity] = useState(1);
 
     useEffect(() => {
         fetchConfig();
@@ -37,26 +38,6 @@ export default function Home() {
             setLoading(false);
         }
     };
-
-    // Initialize canvas renderer
-    useEffect(() => {
-        if (canvasRef.current && !rendererRef.current) {
-            rendererRef.current = new DxfRenderer(canvasRef.current);
-        }
-        return () => {
-            if (rendererRef.current) {
-                rendererRef.current.destroy();
-                rendererRef.current = null;
-            }
-        };
-    }, [dxfData]);
-
-    // Update renderer when DXF data changes
-    useEffect(() => {
-        if (rendererRef.current && dxfData) {
-            rendererRef.current.setEntities(dxfData.entities, dxfData.metrics.bounds);
-        }
-    }, [dxfData]);
 
     // Calculate price when inputs change
     useEffect(() => {
@@ -195,13 +176,9 @@ export default function Home() {
                                             </svg>
                                         </button>
                                     </div>
-                                    <canvas
-                                        ref={canvasRef}
-                                        width={800}
-                                        height={500}
-                                        className="w-full bg-slate-900"
-                                        style={{ cursor: 'grab' }}
-                                    />
+                                    <div className="w-full h-[500px] bg-slate-900 border-b border-slate-700/50 relative">
+                                        <DXFViewer dxfData={dxfData} />
+                                    </div>
                                 </div>
                             )}
 
@@ -265,31 +242,39 @@ export default function Home() {
                                 {/* Price Display */}
                                 {priceBreakdown && dxfData ? (
                                     <div className="mt-8">
-                                        <div className="text-center py-6 border-t border-slate-700/50">
-                                            <div className="text-sm text-slate-400 mb-2">Estimated Price</div>
-                                            <div className="text-4xl font-bold gradient-text">
-                                                {formatCurrency(priceBreakdown.finalPrice, priceBreakdown.currency)}
-                                            </div>
-                                            {priceBreakdown.minChargeApplied && (
-                                                <div className="text-amber-400 text-xs mt-2">
-                                                    ⚠️ Minimum charge applied
+                                        {/* Quantity Selector */}
+                                        <div className="mb-6">
+                                            <label className="label">Quantity</label>
+                                            <div className="flex items-center gap-3">
+                                                <button
+                                                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                                                    className="w-10 h-10 rounded-lg bg-slate-800 border border-slate-700 hover:bg-slate-700 flex items-center justify-center text-lg font-medium transition"
+                                                >
+                                                    -
+                                                </button>
+                                                <div className="w-20 h-10 rounded-lg bg-slate-800/50 border border-slate-700 flex items-center justify-center font-bold text-xl">
+                                                    {quantity}
                                                 </div>
-                                            )}
+                                                <button
+                                                    onClick={() => setQuantity(quantity + 1)}
+                                                    className="w-10 h-10 rounded-lg bg-slate-800 border border-slate-700 hover:bg-slate-700 flex items-center justify-center text-lg font-medium transition"
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
                                         </div>
 
-                                        <div className="space-y-2 text-sm pt-4 border-t border-slate-700/50">
-                                            <div className="flex justify-between">
-                                                <span className="text-slate-400">Area Cost</span>
-                                                <span>{formatCurrency(priceBreakdown.areaCost)}</span>
+                                        <div className="text-center py-6 border-t border-slate-700/50">
+                                            <div className="text-sm text-slate-400 mb-2">Total Price</div>
+                                            <div className="text-5xl font-bold gradient-text">
+                                                {formatCurrency(priceBreakdown.finalPrice * quantity, priceBreakdown.currency)}
                                             </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-slate-400">Cut Time ({priceBreakdown.details.cutTimeMinutes.toFixed(1)} min)</span>
-                                                <span>{formatCurrency(priceBreakdown.timeCost)}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-slate-400">Markup ({priceBreakdown.markupPercent}%)</span>
-                                                <span>+{formatCurrency(priceBreakdown.markupAmount)}</span>
-                                            </div>
+                                        </div>
+
+                                        <div className="mt-4">
+                                            <button className="btn btn-primary w-full py-4 text-lg shadow-lg shadow-indigo-500/20">
+                                                Order Now
+                                            </button>
                                         </div>
                                     </div>
                                 ) : (
